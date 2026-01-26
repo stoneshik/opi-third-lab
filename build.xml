@@ -201,16 +201,20 @@
         <copy todir="${alt.work.dir}/src">
             <fileset dir="${src.dir}"/>
         </copy>
-        <!-- применяем замену идентификаторов/имен классов -->
-        <replaceregexp byline="true" flags="g" match="${alt.replace.pattern}" replace="${alt.replace.replacement}">
+        <!-- заменяем идентификаторы/имена классов -->
+        <replaceregexp byline="true" flags="g"
+            match="${alt.replace.pattern}" replace="${alt.replace.replacement}">
             <fileset dir="${alt.work.dir}/src" includes="**/*.java"/>
         </replaceregexp>
-        <!-- временно переключаем src.dir на alt src и вызываем build -->
-        <property name="orig.src.dir" value="${src.dir}"/>
-        <property name="src.dir" value="${alt.work.dir}/src" override="true"/>
-        <antcall target="build"/>
-        <!-- вернуть исходный src.dir -->
-        <property name="src.dir" value="${orig.src.dir}" override="true"/>
+        <!-- вызываем Python скрипт для переименования файлов -->
+        <exec executable="python3" failonerror="true">
+            <arg value="rename_classes.py"/>
+            <arg value="${alt.work.dir}/src"/>
+        </exec>
+        <!-- сборка альтернативной версии -->
+        <antcall target="build">
+            <param name="src.dir" value="${alt.work.dir}/src"/>
+        </antcall>
     </target>
 
     <!-- 12. diff: если изменения не касаются указанных классов, выполнить git commit -->
