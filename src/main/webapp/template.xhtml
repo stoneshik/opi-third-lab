@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="ru"
+      xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
+<h:head>
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge"/>
+    <title><ui:insert name="title">Третья лаба</ui:insert></title>
+    <h:outputStylesheet library="css" name="main.css"/>
+</h:head>
+<h:body>
+    <div id="header" class="container">
+        <div class="container"><h2>Стрельбицкий Илья</h2></div>
+        <div class="container column"><h3>Группа P32101</h3><h4>3210199 вариант</h4></div>
+    </div>
+    <div id="wrapper" class="container"><ui:insert name="wrapper_content">Default content</ui:insert></div>
+    <div id="footer"><ui:insert name="footer_content">Default footer content</ui:insert></div>
+</h:body>
+</html>

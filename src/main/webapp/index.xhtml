@@ -1,0 +1,18 @@
+<ui:composition template="/template.xhtml"
+                xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="http://xmlns.jcp.org/jsf/html"
+                xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
+    <ui:define name="title">Стартовая страница</ui:define>
+    <ui:define name="wrapper_content">
+        <div>
+            <h2>Текущая дата и время</h2>
+            <div id="clock">
+                <div id="time">00.00.00, 00:00</div>
+            </div>
+            <h3><h:link value="Перейти на основную страницу" outcome="redir-main" /></h3>
+        </div>
+    </ui:define>
+    <ui:define name="footer_content">
+        <h:outputScript library="js" name="clock.js"/>
+    </ui:define>
+</ui:composition>

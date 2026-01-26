@@ -1,0 +1,276 @@
+* {
+    box-sizing: border-box;
+}
+body,
+tbody {
+    margin: 0;
+    padding: 0;
+}
+body {
+    display: flex;
+    flex-direction: column;
+    background: #FFF;
+    font-family: 'Roboto', sans-serif;
+}
+p {
+    margin: 16px 10px 20px;
+}
+h1, h2, h3, h4 {
+    color: #4A90E2;
+    font-weight: bold;
+}
+a {
+    color: darkblue;
+    outline: none;
+    text-decoration: underline;
+}
+a:hover {
+    text-decoration: none;
+}
+label {
+    display: inline-block;
+    margin-left: 10px;
+    margin-bottom: 5px;
+    color: #9D959D;
+    font-size: 20px;
+    font-weight: 300;
+}
+#wrapper {
+    padding: 0 20px;
+}
+.container {
+    display: flex;
+    justify-content: space-around;
+    align-content: center;
+    flex-wrap: wrap;
+}
+.container.column {
+    flex-direction: column;
+    justify-content: center;
+    align-content: space-around;
+}
+#header {
+    min-height: 125px;
+    background-color: #EEE;
+    text-align: center;
+}
+#canvas {
+    margin-top: 5%;
+    margin-left: 5%;
+    padding: 0;
+    display: inline-block;
+    border: 1px solid #000;
+}
+#center_col {
+    margin: 0 0 0 25px;
+}
+/*стили формы */
+#clean_form {
+    padding: 10px;
+}
+.ui-form {
+    max-width: 450px;
+    padding: 80px 30px 30px;
+    margin: 25px 0;
+    background: #FFF;
+    border: 3px solid #DDD;
+}
+.ui-form h3 {
+    position: relative;
+    z-index: 5;
+    margin: 0 0 60px;
+    text-align: center;
+    color: #4A90E2;
+    font-size: 30px;
+    font-weight: normal;
+}
+.form-row {
+    position: relative;
+    margin-bottom: 40px;
+}
+.form-row input {
+    display: block;
+    width: 100%;
+    padding: 0 40px;
+    line-height: 40px;
+    font-family: 'Roboto', sans-serif;
+    background: none;
+    border-width: 0;
+    border-bottom: 2px solid #4A90E2;
+    transition: all 0.2s ease;
+}
+.form-row .text-input-label {
+    position: absolute;
+    margin: 0;
+    left: 13px;
+    color: #9D959D;
+    font-size: 20px;
+    font-weight: 300;
+    transform: translateY(-35px);
+    transition: all 0.2s ease;
+}
+.form-row input[type="text"]:focus {
+    outline: 0;
+    border-color: #F77A52;
+}
+.form-row input[type="text"]:focus+label {
+    margin-left: -20px;
+    font-size: 14px;
+    font-weight: 400;
+    outline: 0;
+    border-color: #F77A52;
+    color: #F77A52;
+}
+.ui-form input[type="submit"] {
+    width: 100%;
+    padding: 0;
+    line-height: 42px;
+    background: #4A90E2;
+    border-width: 0;
+    color: #FFF;
+    font-size: 20px;
+}
+.ui-form p {
+    margin: 0;
+    padding-top: 10px;
+}
+.error {
+    color: #CC0000;
+    font-size: 20px;
+    font-weight: 300;
+    text-align: center;
+}
+
+fieldset,
+.option-command-link {
+    margin-bottom: 20px;
+    border: 3px solid #DDE;
+}
+.option-command-link {
+    display: flex;
+    justify-content: center;
+    wrap-option: nowrap;
+}
+.option-command-link a {
+    text-decoration: none;
+    display: inline-block;
+    padding: 10px;
+    background: #DDE;
+    border: 1px solid #FFF;
+}
+.option-command-link a:hover {
+    background: #CCC;
+}
+.option-command-link a.option-command-link-selected {
+    background: #BBBCCC;
+}
+
+fieldset label {
+    display: block;
+    margin-left: 0;
+}
+fieldset input {
+    appearance: none;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #4A90E2;
+    transition: 0.2s all linear;
+    outline: none;
+    margin-right: 5px;
+    position: relative;
+    top: 4px;
+}
+fieldset input:checked {
+    border: 4px solid #F77A52;
+}
+
+.select {
+    display: block;
+    font-size: 16px;
+    font-family: sans-serif;
+    font-weight: 700;
+    color: #444;
+    line-height: 1.3;
+    padding: 5px;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    border: 3px solid #DDD;
+    appearance: none;
+    background-color: #FFF;
+}
+.select:focus {
+    border-color: #F77A52;
+    color: #222;
+    outline: none;
+}
+.select option {
+    font-weight:normal;
+}
+/* стили таблицы резульатов */
+.results {
+    padding: 5px;
+    margin-bottom: 10px;
+    background-color: #EEE;
+    border: none;
+}
+.results tr {
+    border: none;
+}
+#results {
+    max-width: 450px;
+    min-width: 250px;
+}
+#area-check-results {
+    min-width: 600px;
+}
+.response {
+    display: inline-block;
+    width: 100%;
+    padding: 5px;
+    margin: 10px 0;
+    background-color: #FFF;
+}
+.response td,
+.results td {
+    padding: 5px;
+    color: #EEE;
+    font-size: 18px;
+    font-weight: 300;
+}
+.response td:last-child,
+.response.triple-column td.per-last {
+    border-right: none;
+}
+.response.single-column td {
+    width: 100%;
+}
+.response.double-column td {
+    width: 49%;
+}
+.response.triple-column td {
+    width: 32%;
+}
+.response.triple-column td.last {
+    width: 100%;
+    border-top: 1px solid #EEE;
+}
+.neutral {
+    background-color: #CCC;
+}
+.success {
+    background-color: #339966;
+}
+.fail {
+    background-color: #CC0000;
+}
+.response.neutral td {
+    color: #000;
+}
+/* стили часов */
+#clock {
+    text-align: center;
+    padding: 20px;
+    font-size: 30px;
+}

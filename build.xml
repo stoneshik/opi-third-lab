@@ -1,0 +1,307 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="third-lab" default="help" basedir=".">
+    <!-- Требуемые внешние библиотеки: ant-contrib.jar, ant-jsch + jsch.jar (для scp) -->
+    <property file="build.properties"/>
+
+    <!-- paths -->
+    <path id="project.classpath">
+        <fileset dir="${lib.dir}">
+            <include name="**/*.jar"/>
+        </fileset>
+    </path>
+
+    <!-- prepare build dirs -->
+    <target name="init">
+        <mkdir dir="${classes.dir}"/>
+        <mkdir dir="${test-classes.dir}"/>
+        <mkdir dir="${dist.dir}"/>
+        <mkdir dir="${build.dir}/META-INF"/>
+        <mkdir dir="${temp.dir}"/>
+    </target>
+
+    <!-- help -->
+    <target name="help" description="Список целей">
+        <echo>Targets: compile, build, clean, test, xml, scp, native2ascii, music, doc, env, alt, diff, report, history, team</echo>
+    </target>
+
+    <!-- compile: компиляция исходников -->
+    <target name="compile" depends="init" description="Компиляция исходных кодов проекта">
+        <javac srcdir="${src.dir}" destdir="${classes.dir}" includeantruntime="false" encoding="UTF-8" debug="on">
+            <classpath refid="project.classpath"/>
+        </javac>
+        <!-- копируем ресурсы -->
+        <copy todir="${classes.dir}">
+            <fileset dir="${resources.dir}"/>
+            <fileset dir="${webapp.dir}" includes="**/*.xhtml,WEB-INF/**"/>
+        </copy>
+    </target>
+
+    <!-- build: вызывает compile и собирает исполняемый jar c MANIFEST -->
+    <target name="build" depends="compile" description="Сборка и упаковка в jar (исполняемый)">
+        <!-- подготовка MANIFEST.MF -->
+        <manifest file="${manifest.file}">
+            <attribute name="Manifest-Version" value="1.0"/>
+            <attribute name="Main-Class" value="${main.class}"/>
+            <attribute name="Implementation-Version" value="${project.version}"/>
+        </manifest>
+        <!-- создаём jar -->
+        <jar destfile="${dist.dir}/${jar.name}" basedir="${classes.dir}" manifest="${manifest.file}">
+            <!-- добавим web resources и webapp в jar -->
+            <zipfileset dir="${webapp.dir}" prefix="webapp"/>
+        </jar>
+        <echo>Created ${dist.dir}/${jar.name}</echo>
+    </target>
+
+    <!-- clean: удаление build артефактов -->
+    <target name="clean" description="Удаление скомпилированных классов и временных файлов">
+        <delete dir="${build.dir}"/>
+        <delete dir="${dist.dir}"/>
+    </target>
+
+    <!-- test: запуск JUnit 5 через junit-platform-console-standalone -->
+    <target name="test" depends="build" description="Запуск junit-тестов (JUnit 5)">
+        <condition property="junit.console.exists">
+            <available file="${junit.console.jar}"/>
+        </condition>
+        <fail message="junit-platform-console-standalone.jar не найден. Поместите его в ${junit.console.jar}" unless="junit.console.exists"/>
+        <!-- компиляция тестов -->
+        <javac srcdir="${test.src.dir}" destdir="${test-classes.dir}" includeantruntime="false" encoding="UTF-8" debug="on">
+            <classpath>
+                <path refid="project.classpath"/>
+                <pathelement path="${classes.dir}"/>
+            </classpath>
+        </javac>
+        <!-- запуск тестов через junit-platform-console -->
+        <mkdir dir="${temp.dir}/test-reports"/>
+        <exec executable="java" failonerror="true">
+            <arg value="-jar"/>
+            <arg path="${junit.console.jar}"/>
+            <arg value="--class-path"/>
+            <arg path="${classes.dir}${path.separator}${test-classes.dir}${path.separator}${lib.dir}/*"/>
+            <arg value="--scan-class-path"/>
+            <arg value="--reports-dir=${temp.dir}/test-reports"/>
+            <!-- сохранить результат для report target -->
+        </exec>
+    </target>
+
+    <!-- xml: валидация всех xml -->
+    <target name="xml" depends="compile" description="Валидация всех xml-файлов проекта">
+        <xmlvalidate failonerror="true">
+            <fileset dir="." includes="**/*.xml"/>
+        </xmlvalidate>
+    </target>
+
+    <!-- scp: копирование собранного jar на сервер -->
+    <target name="scp" depends="build" description="Перемещение собранного проекта по scp на сервер">
+        <!-- требует ant-jsch и jsch.jar -->
+        <scp file="${dist.dir}/${jar.name}"
+            todir="${scp.server}:${scp.dest}"
+            trust="yes"
+            keyfile="${scp.identity.key}"
+            verbose="true"
+            failonerror="true"/>
+    </target>
+
+    <!-- native2ascii: конвертация локализаций -->
+    <target name="native2ascii" description="Преобразование native2ascii для файлов локализаций">
+        <mkdir dir="${locales.dest.dir}"/>
+        <fileset id="locale.files" dir="${locales.src.dir}" includes="**/*.properties"/>
+        <foreach target="n2a.convert" param="file">
+            <path>
+                <fileset refid="locale.files"/>
+            </path>
+        </foreach>
+    </target>
+    <target name="n2a.convert">
+        <native2ascii src="${file}" dest="${locales.dest.dir}/${file}" encoding="UTF-8"/>
+    </target>
+
+    <!-- music: воспроизведение музыки после сборки -->
+    <target name="music" depends="build" description="Воспроизведение музыки по завершению сборки">
+        <exec executable="${music.player}" failonerror="false">
+            <arg value="${music.file}"/>
+        </exec>
+    </target>
+
+    <!-- doc: добавление MD5 и SHA-1 в MANIFEST и генерация javadoc и включение в jar -->
+    <target name="doc" depends="build" description="Добавление checksum'ов и генерация javadoc">
+        <checksum todir="${temp.dir}/checksums" algorithm="${checksum.algorithms}">
+            <fileset dir="." includes="**/*.java, pom.xml"/>
+        </checksum>
+        <!-- обновление MANIFEST.MF (добавляем записанные checksum-ы файлов как entries) -->
+        <concat destfile="${manifest.file}.tmp">
+            <concatfile file="${manifest.file}"/>
+            <concatfilter/>
+            <fileset dir="${temp.dir}/checksums" includes="**/*"/>
+        </concat>
+        <move file="${manifest.file}.tmp" tofile="${manifest.file}" overwrite="true"/>
+        <!-- javadoc -->
+        <mkdir dir="${temp.dir}/javadoc"/>
+        <javadoc destdir="${temp.dir}/javadoc" sourcepath="${src.dir}" use="true" author="true" version="true" encoding="UTF-8">
+            <packageset dir="${src.dir}">
+                <include name="**/*"/>
+            </packageset>
+        </javadoc>
+        <!-- добавить javadoc в jar -->
+        <jar update="true" destfile="${dist.dir}/${jar.name}">
+            <fileset dir="${temp.dir}/javadoc"/>
+        </jar>
+    </target>
+
+    <!-- env: сборка и запуск в альтернативных окружениях (java exec path + vm args) -->
+    <target name="env" depends="build" description="Сборка и запуск программы в альтернативных окружениях">
+        <!-- пример: использовать env.java11.exec -->
+        <echo>Запуск с java: ${env.java11.exec}</echo>
+        <java fork="true" executable="${env.java11.exec}" failonerror="true">
+            <jvmarg line="${env.vm.args}"/>
+            <arg value="-jar"/>
+            <arg value="${dist.dir}/${jar.name}"/>
+        </java>
+    </target>
+
+    <!-- alt: создаёт альтернативную версию с replaceregexp и упаковывает её, использует цель build -->
+    <target name="alt" depends="init" description="Создание альтернативной версии приложения">
+        <delete dir="${alt.work.dir}"/>
+        <mkdir dir="${alt.work.dir}"/>
+        <copy todir="${alt.work.dir}/src">
+            <fileset dir="${src.dir}"/>
+        </copy>
+        <!-- применяем замену идентификаторов/имен классов -->
+        <replaceregexp byline="true" flags="g" match="${alt.replace.pattern}" replace="${alt.replace.replacement}">
+            <fileset dir="${alt.work.dir}/src" includes="**/*.java"/>
+        </replaceregexp>
+        <!-- временно переключаем src.dir на alt src и вызываем build -->
+        <property name="orig.src.dir" value="${src.dir}"/>
+        <property name="src.dir" value="${alt.work.dir}/src" override="true"/>
+        <antcall target="build"/>
+        <!-- вернуть исходный src.dir -->
+        <property name="src.dir" value="${orig.src.dir}" override="true"/>
+    </target>
+
+    <!-- diff: если изменения не касаются указанных классов, выполнить git commit -->
+    <target name="diff" description="Проверка изменений и commit в git при разрешённых изменениях">
+        <exec executable="git" outputproperty="git.diff.output">
+            <arg value="diff"/>
+            <arg value="--name-only"/>
+        </exec>
+        <echo message="Changed files: ${git.diff.output}"/>
+        <!-- проверяем нет ли запрещённых изменений -->
+        <condition property="changes.only.allowed">
+            <and>
+                <isset property="git.diff.output"/>
+                <matches pattern="^(${diff.allowed.files.replace(',','|')})" string="${git.diff.output}" negate="true"/>
+            </and>
+        </condition>
+        <fail message="Есть запрещённые изменения, commit не выполнен" unless="changes.only.allowed"/>
+        <exec executable="git">
+            <arg value="add"/>
+            <arg value="-A"/>
+        </exec>
+        <exec executable="git">
+            <arg value="commit"/>
+            <arg value="-m"/>
+            <arg value="${git.commit.message}"/>
+        </exec>
+    </target>
+
+    <!-- report: если тесты прошли успешно, сохранить junit xml и commit -->
+    <target name="report" depends="test" description="Сохранение отчёта junit и добавление в git">
+        <!-- предполагается, что junit-platform-console сохранил отчёты в ${temp.dir}/test-reports -->
+        <fileset id="junit.reports" dir="${temp.dir}/test-reports" includes="**/*.xml"/>
+        <condition property="reports.exist">
+            <resourcecount when="greater" count="0">
+                <resources>
+                    <fileset refid="junit.reports"/>
+                </resources>
+            </resourcecount>
+        </condition>
+        <fail message="Отчёты junit не найдены" unless="reports.exist"/>
+        <exec executable="git">
+            <arg value="add"/>
+            <arg value="${temp.dir}/test-reports"/>
+        </exec>
+        <exec executable="git">
+            <arg value="commit"/>
+            <arg value="-m"/>
+            <arg value="Add junit test reports"/>
+        </exec>
+    </target>
+
+    <!-- history: попытка собрать предыдущие SVN ревизии пока не соберется проект -->
+    <target name="history" description="Загрузка предыдущих svn-ревизий до успешной сборки (или до первой)">
+        <taskdef resource="net/sf/antcontrib/antcontrib.properties">
+            <classpath>
+                <fileset dir="${lib.dir}">
+                    <include name="ant-contrib*.jar"/>
+                </fileset>
+            </classpath>
+        </taskdef>
+        <!-- получаем HEAD revision -->
+        <exec executable="svn" outputproperty="svn.info">
+            <arg value="info"/>
+            <arg value="${svn.repo.url}"/>
+        </exec>
+        <!-- парсим ревизию -->
+        <propertyregex property="svn.revision" input="${svn.info}" regexp="Last Changed Rev: (\\d+)" select="\1"/>
+        <echo message="Starting from revision ${svn.revision}"/>
+        <var name="rev" value="${svn.revision}"/>
+        <for param="r" begin="1" end="${svn.revision}" step="1">
+            <sequential>
+                <propertyregex property="current.rev" input="@{r}" regexp="(.*)" select="\1"/>
+                <echo message="Checking revision @{r}"/>
+                <exec executable="svn" failonerror="false">
+                    <arg value="update"/>
+                    <arg value="-r"/>
+                    <arg value="@{r}"/>
+                    <arg value="${svn.repo.url}"/>
+                </exec>
+                <antcall target="compile-check"/>
+                <condition property="compiled.ok">
+                    <available file="${classes.dir}"/>
+                </condition>
+                <if>
+                    <isset property="compiled.ok"/>
+                    <then>
+                        <echo message="Сборка успешна на ревизии @{r}"/>
+                        <break/>
+                    </then>
+                </if>
+            </sequential>
+        </for>
+        <!-- при неудаче вывести результат -->
+        <echo message="История проверки завершена"/>
+    </target>
+    <target name="compile-check" depends="init" description="Внутренняя: попытка компиляции в history">
+        <javac srcdir="${src.dir}" destdir="${classes.dir}" includeantruntime="false" debug="false">
+            <classpath refid="project.classpath"/>
+        </javac>
+    </target>
+
+    <!-- team: получить 2 предыдущие ревизии из svn, собрать и упаковать jar-файлы в zip -->
+    <target name="team" depends="init" description="Получение 2 предыдущих ревизий, сборка и упаковка jar'ов">
+        <exec executable="svn" failonerror="true">
+            <arg value="info"/>
+            <arg value="${svn.repo.url}"/>
+        </exec>
+        <!-- скачиваем ревизии HEAD-1 и HEAD-2 в отдельные папки -->
+        <exec executable="svn" failonerror="true">
+            <arg value="checkout"/>
+            <arg value="${svn.repo.url}@HEAD-1"/>
+            <arg value="${build.dir}/svn-rev-1"/>
+        </exec>
+        <exec executable="svn" failonerror="true">
+            <arg value="checkout"/>
+            <arg value="${svn.repo.url}@HEAD-2"/>
+            <arg value="${build.dir}/svn-rev-2"/>
+        </exec>
+        <!-- собираем каждую (вызываем ant build, предполагается, что в каждой ревизии есть этот build.xml) -->
+        <ant antfile="${build.dir}/svn-rev-1/build.xml" dir="${build.dir}/svn-rev-1" target="build"/>
+        <ant antfile="${build.dir}/svn-rev-2/build.xml" dir="${build.dir}/svn-rev-2" target="build"/>
+        <!-- собираем архив -->
+        <zip destfile="${team.output.zip}">
+            <fileset dir="${build.dir}/svn-rev-1/dist" includes="**/*.jar"/>
+            <fileset dir="${build.dir}/svn-rev-2/dist" includes="**/*.jar"/>
+        </zip>
+        <echo message="Team archive: ${team.output.zip}"/>
+    </target>
+</project>
