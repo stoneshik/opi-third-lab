@@ -132,23 +132,33 @@
 
     <!-- 9. doc: добавление MD5 и SHA-1 в MANIFEST и генерация javadoc и включение в jar -->
     <target name="doc" depends="build" description="Генерация javadoc и добавление checksum в MANIFEST">
-        <checksum todir="${temp.dir}/checksums" algorithm="${checksum.algorithms}">
-            <fileset dir="." includes="**/*.java, pom.xml"/>
+        <delete dir="${temp.dir}/checksums"/>
+        <mkdir dir="${temp.dir}/checksums"/>
+        <!-- MD5 -->
+        <checksum algorithm="${checksum.md5}" todir="${temp.dir}/checksums/md5">
+            <fileset dir="." includes="**/*.java,pom.xml"/>
         </checksum>
-        <!-- обновление MANIFEST.MF (добавляем записанные checksum-ы файлов как entries) -->
+        <!-- SHA-1 -->
+        <checksum algorithm="${checksum.sha1}" todir="${temp.dir}/checksums/sha1">
+            <fileset dir="." includes="**/*.java,pom.xml"/>
+        </checksum>
+        <!-- обновляем MANIFEST -->
         <concat destfile="${manifest.file}.tmp">
-            <concatfile file="${manifest.file}"/>
-            <concatfilter/>
+            <fileset file="${manifest.file}"/>
             <fileset dir="${temp.dir}/checksums" includes="**/*"/>
         </concat>
-        <move file="${manifest.file}.tmp" tofile="${manifest.file}" overwrite="true"/>
+        <move file="${manifest.file}.tmp"
+            tofile="${manifest.file}"
+            overwrite="true"/>
         <!-- javadoc -->
         <mkdir dir="${temp.dir}/javadoc"/>
-        <javadoc destdir="${temp.dir}/javadoc" sourcepath="${src.dir}" use="true" author="true" version="true" encoding="UTF-8">
-            <packageset dir="${src.dir}">
-                <include name="**/*"/>
-            </packageset>
-        </javadoc>
+        <javadoc destdir="${temp.dir}/javadoc"
+            sourcepath="${src.dir}"
+            encoding="UTF-8"
+            author="true"
+            version="true"
+            classpathref="project.classpath"
+            failonerror="true"/>
         <!-- добавить javadoc в jar -->
         <jar update="true" destfile="${dist.dir}/${jar.name}">
             <fileset dir="${temp.dir}/javadoc"/>
