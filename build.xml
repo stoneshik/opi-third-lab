@@ -112,21 +112,15 @@
     </target>
 
     <!-- 7. native2ascii: конвертация локализаций -->
-    <target name="native2ascii" description="Конвертация локализаций">
-        <mkdir dir="${locales.dest.dir}"/>
-        <fileset id="locale.files" dir="${locales.src.dir}" includes="**/*.properties"/>
-        <foreach target="n2a.convert" param="srcFile">
-            <path>
-                <fileset refid="locale.files"/>
-            </path>
-        </foreach>
-    </target>
-    <target name="n2a.convert">
-        <native2ascii encoding="UTF-8">
-            <fileset file="${srcFile}"/>
-            <mapper type="flatten"/>
-            <todir>${locales.dest.dir}</todir>
-        </native2ascii>
+    <target name="native2ascii">
+        <delete dir="${i18n.converted.dir}"/>
+        <delete dir="${i18n.final.dir}"/>
+        <native2ascii src="${i18n.src.dir}"
+                    dest="${i18n.converted.dir}"
+                    includes="**/*.properties"/>
+        <copy todir="${i18n.final.dir}">
+            <fileset dir="${i18n.converted.dir}"/>
+        </copy>
     </target>
 
     <!-- 8. music: воспроизведение музыки после сборки -->
