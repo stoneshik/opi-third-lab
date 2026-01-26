@@ -166,12 +166,32 @@
     </target>
 
     <!-- 10. env: сборка и запуск в альтернативных окружениях (java exec path + vm args) -->
-    <target name="env" depends="build" description="Запуск в альтернативных окружениях">
-        <java fork="true" executable="${env.java11.exec}" failonerror="true">
-            <jvmarg line="${env.vm.args}"/>
+    <target name="env-compile" description="Сборка под альтернативную JVM (Java 11)">
+        <delete dir="${classes.dir}"/>
+        <delete file="${dist.dir}/${jar.name}"/>
+        <mkdir dir="${classes.dir}"/>
+        <javac srcdir="${src.dir}"
+            destdir="${classes.dir}"
+            encoding="UTF-8"
+            source="${env.java.version}"
+            target="${env.java.version}"
+            fork="true"
+            executable="${env.javac}"
+            includeantruntime="false">
+            <classpath refid="project.classpath"/>
+        </javac>
+        <jar destfile="${dist.dir}/${jar.name}" basedir="${classes.dir}">
+            <manifest>
+                <attribute name="Main-Class" value="lab.third.MainClass"/>
+            </manifest>
+        </jar>
+    </target>
+    <target name="env" depends="env-compile" description="Сборка и запуск в альтернативных окружениях">
+        <exec executable="${env.java}" failonerror="true">
+            <arg line="${env.vm.args}"/>
             <arg value="-jar"/>
             <arg value="${dist.dir}/${jar.name}"/>
-        </java>
+        </exec>
     </target>
 
     <!-- 11. alt: создаёт альтернативную версию с replaceregexp и упаковывает её, использует цель build -->
