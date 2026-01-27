@@ -208,7 +208,7 @@
         </replaceregexp>
         <!-- вызываем Python скрипт для переименования файлов -->
         <exec executable="python3" failonerror="true">
-            <arg value="rename_classes.py"/>
+            <arg value="scripts/rename_classes.py"/>
             <arg value="${alt.work.dir}/src"/>
         </exec>
         <!-- сборка альтернативной версии -->
@@ -219,24 +219,30 @@
 
     <!-- 12. diff: если изменения не касаются указанных классов, выполнить git commit -->
     <target name="diff" description="Проверка изменений и commit в git при разрешённых изменениях">
-        <exec executable="git" outputproperty="git.diff.output">
-            <arg value="diff"/>
-            <arg value="--name-only"/>
+        <!-- Проверка изменений через Python -->
+        <exec executable="python3" failonerror="true" resultproperty="diff.result">
+            <env key="DIFF_ALLOWED_FILES" value="${diff.allowed.files}"/>
+            <arg value="scripts/git_diff_check.py"/>
         </exec>
-        <echo message="Changed files: ${git.diff.output}"/>
-        <!-- проверяем нет ли запрещённых изменений -->
-        <condition property="changes.only.allowed">
-            <and>
-                <isset property="git.diff.output"/>
-                <matches pattern="^(${diff.allowed.files.replace(',','|')})" string="${git.diff.output}" negate="true"/>
-            </and>
-        </condition>
-        <fail message="Есть запрещённые изменения, commit не выполнен" unless="changes.only.allowed"/>
-        <exec executable="git">
+        <!-- Если код возврата НЕ 0 — прерываем сборку -->
+        <fail message="Есть запрещённые изменения, commit не выполнен"
+            unless="diff.result"/>
+        <!-- git commit -->
+        <exec executable="git" failonerror="true">
+            <arg value="config"/>
+            <arg value="user.name"/>
+            <arg value="${git.user.name}"/>
+        </exec>
+        <exec executable="git" failonerror="true">
+            <arg value="config"/>
+            <arg value="user.email"/>
+            <arg value="${git.user.email}"/>
+        </exec>
+        <exec executable="git" failonerror="true">
             <arg value="add"/>
             <arg value="-A"/>
         </exec>
-        <exec executable="git">
+        <exec executable="git" failonerror="true">
             <arg value="commit"/>
             <arg value="-m"/>
             <arg value="${git.commit.message}"/>
