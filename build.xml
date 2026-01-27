@@ -271,89 +271,12 @@
         </exec>
     </target>
 
-
     <!-- 14. history: попытка собрать предыдущие SVN ревизии пока не соберется проект -->
-    <!-- Определяем svn.revision = HEAD из репозитория -->
-    <target name="resolve-svn-revision" description="Определить svn.revision (HEAD) из репозитория" unless="svn.revision">
-        <echo message="Определяю HEAD ревизию из репозитория ${svn.repo.url}"/>
-        <exec executable="svn" outputproperty="svn.revision.raw" failonerror="true">
-            <arg value="info"/>
-            <arg value="${svn.repo.url}"/>
-            <arg value="--show-item"/>
-            <arg value="revision"/>
+    <target name="history" description="SVN history build check">
+        <exec executable="python3" failonerror="true">
+            <env key="SVN_REPO_URL" value="${svn.repo.url}"/>
+            <arg value="scripts/history.py"/>
         </exec>
-        <propertyregex property="svn.revision"
-                       input="${svn.revision.raw}"
-                       regexp="([0-9]+)"
-                       select="\1"/>
-        <echo message="svn.revision = ${svn.revision}"/>
-    </target>
-    <!-- Генерируем список ревизий в виде csv: "5,4,3,2,1" -->
-    <target name="generate-rev-list" depends="resolve-svn-revision" description="Сгенерировать список ревизий в формате CSV (убывающий)">
-        <echo message="Генерирую список ревизий от ${svn.revision} до 1"/>
-        <!-- Используем bash+seq+paste для получения "5,4,3,2,1" -->
-        <exec executable="bash" outputproperty="rev.list.raw" failonerror="true">
-            <arg value="-c"/>
-            <arg value="seq ${svn.revision} -1 1 | paste -sd, -"/>
-        </exec>
-        <!-- убираем возможный перевод строки -->
-        <propertyregex property="rev.list" input="${rev.list.raw}" regexp="^\\s*(.*)\\s*$" select="\1"/>
-        <echo message="rev.list=${rev.list}"/>
-    </target>
-    <!-- проверка компиляции: чистим classes, компилируем (не падаем) -->
-    <target name="compile-check" depends="init" description="Проверка компиляции">
-        <echo message="compile-check: очищаем ${classes.dir} и компилируем"/>
-        <delete dir="${classes.dir}" failonerror="false"/>
-        <mkdir dir="${classes.dir}"/>
-        <javac srcdir="${src.dir}" destdir="${classes.dir}" includeantruntime="false" debug="false" failonerror="false">
-            <classpath refid="project.classpath"/>
-        </javac>
-    </target>
-    <!-- history: попытка собрать предыдущие SVN ревизии пока не соберется проект -->
-    <target name="history" depends="generate-rev-list,init,verify-libs" description="Проверка сборки прошлых svn ревизий">
-        <echo message="Запуск проверки сборки предыдущих svn-ревизий (от ${svn.revision} до 1)"/>
-        <!-- Итерируем по сгенерированному CSV списка ревизий -->
-        <for list="${rev.list}" param="r" delimiter=",">
-            <sequential>
-                <echo message="Обновление рабочей копии до ревизии @{r}"/>
-                <exec executable="svn" failonerror="false">
-                    <arg value="update"/>
-                    <arg value="-r"/>
-                    <arg value="@{r}"/>
-                </exec>
-                <antcall target="compile-check"/>
-                <!-- проверяем результат компиляции: есть ли class-файлы -->
-                <condition property="compiled.ok">
-                    <resourcecount when="greater" count="0">
-                        <fileset dir="${classes.dir}" includes="**/*.class"/>
-                    </resourcecount>
-                </condition>
-                <if>
-                    <isset property="compiled.ok"/>
-                    <then>
-                        <echo message="Сборка успешна на ревизии @{r}"/>
-                        <property name="last.working.rev" value="@{r}"/>
-                        <!-- вычисляем следующую ревизию (rev+1) -->
-                        <math result="next.rev" operand1="@{r}" operand2="1" operator="add"/>
-                        <echo message="last.working.rev=${last.working.rev}, next.rev=${next.rev}"/>
-                        <!-- формируем diff для ревизии следующей за найденной -->
-                        <exec executable="svn" failonerror="false" output="history-diff-${next.rev}.diff">
-                            <arg value="diff"/>
-                            <arg value="-c"/>
-                            <arg value="${next.rev}"/>
-                            <arg value="${svn.repo.url}"/>
-                        </exec>
-                        <!-- выходим из цикла -->
-                        <break/>
-                    </then>
-                </if>
-            </sequential>
-        </for>
-        <!-- если не найдена ни одна рабочая ревизия, сообщаем -->
-        <condition property="history.found">
-            <isset property="last.working.rev"/>
-        </condition>
-        <fail message="Не найдено ни одной компилирующейся ревизии (1..${svn.revision})" unless="history.found"/>
     </target>
 
     <!-- 15. team: получить 2 предыдущие ревизии из svn, собрать и упаковать jar-файлы в zip -->
