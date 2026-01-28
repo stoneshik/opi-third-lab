@@ -2,22 +2,17 @@
 <project name="third-lab" default="help" basedir=".">
     <!-- Подключаем build.properties -->
     <property file="build.properties"/>
-
     <!-- Проверка внешних библиотек -->
     <target name="verify-libs">
-        <available file="${lib.dir}/ant-contrib.jar" property="antcontrib.exists"/>
-        <fail unless="antcontrib.exists" message="ant-contrib.jar не найден в ${lib.dir}"/>
         <available file="${junit.console.jar}" property="junit.exists"/>
         <fail unless="junit.exists" message="junit-platform-console-standalone.jar не найден в ${lib.dir}"/>
     </target>
-
     <!-- paths -->
     <path id="project.classpath">
         <fileset dir="${lib.dir}">
             <include name="**/*.jar"/>
         </fileset>
     </path>
-
     <!-- prepare build dirs -->
     <target name="init">
         <mkdir dir="${classes.dir}"/>
@@ -27,16 +22,6 @@
         <mkdir dir="${temp.dir}"/>
         <mkdir dir="${lib.dir}"/>
     </target>
-
-    <!-- taskdef для ant-contrib -->
-    <taskdef resource="net/sf/antcontrib/antlib.xml">
-        <classpath>
-            <fileset dir="${lib.dir}">
-                <include name="ant-contrib*.jar"/>
-            </fileset>
-        </classpath>
-    </taskdef>
-
     <!-- help -->
     <target name="help" description="Список целей">
         <echo>Targets: compile, build, clean, test, xml, scp, native2ascii, music, doc, env, alt, diff, report, history, team</echo>
@@ -280,25 +265,12 @@
     </target>
 
     <!-- 15. team: получить 2 предыдущие ревизии из svn, собрать и упаковать jar-файлы в zip -->
-    <target name="team" depends="init" description="Сборка двух предыдущих svn ревизий">
-        <exec executable="svn" failonerror="true">
-            <arg value="checkout"/>
-            <arg value="${svn.repo.url}@HEAD-1"/>
-            <arg value="${build.dir}/svn-rev-1"/>
+    <target name="team" description="Сборка двух предыдущих svn ревизий">
+        <exec executable="python3" failonerror="true">
+            <env key="SVN_REPO_URL" value="${svn.repo.url}"/>
+            <env key="TEAM_REVISIONS" value="${team.revisions}"/>
+            <env key="TEAM_ZIP" value="${team.output.zip}"/>
+            <arg value="scripts/team.py"/>
         </exec>
-        <exec executable="svn" failonerror="true">
-            <arg value="checkout"/>
-            <arg value="${svn.repo.url}@HEAD-2"/>
-            <arg value="${build.dir}/svn-rev-2"/>
-        </exec>
-        <!-- собираем каждую (вызываем ant build, предполагается, что в каждой ревизии есть этот build.xml) -->
-        <ant antfile="${build.dir}/svn-rev-1/build.xml" dir="${build.dir}/svn-rev-1" target="build"/>
-        <ant antfile="${build.dir}/svn-rev-2/build.xml" dir="${build.dir}/svn-rev-2" target="build"/>
-        <!-- собираем архив -->
-        <zip destfile="${team.output.zip}">
-            <fileset dir="${build.dir}/svn-rev-1/dist" includes="**/*.jar"/>
-            <fileset dir="${build.dir}/svn-rev-2/dist" includes="**/*.jar"/>
-        </zip>
-        <echo message="Team archive: ${team.output.zip}"/>
     </target>
 </project>
