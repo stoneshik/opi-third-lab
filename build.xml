@@ -208,7 +208,7 @@
             <env key="DIFF_ALLOWED_FILES" value="${diff.allowed.files}"/>
             <arg value="scripts/git_diff_check.py"/>
         </exec>
-        <!-- Если код возврата НЕ 0 — прерываем сборку -->
+        <!-- Если код возврата НЕ 0 - прерываем сборку -->
         <fail message="Есть запрещённые изменения, commit не выполнен"
             unless="diff.result"/>
         <!-- git commit -->
